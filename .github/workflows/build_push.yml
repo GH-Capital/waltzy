@@ -1,4 +1,4 @@
-name: CI Keiyoushi Style (Flat)
+name: CI Keiyoushi Flat (Python)
 
 on:
   push:
@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build_and_publish:
-    name: Build & Publish (Flat)
+    name: Build & Publish (Flat Python)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -50,37 +50,92 @@ jobs:
           ALIAS: waltzy
           KEY_PASSWORD: waltzysign
 
-      # BAGIAN INI YANG DIUBAH BIAR MIRIP KEIYOUSHI
-      - name: Organize APKs (Flat Structure)
+      # SCRIPT PYTHON CANGGIH (PENGGANTI INSPECTOR)
+      - name: Generate Repo Structure (Python)
+        env:
+          REPO_FINGERPRINT: ${{ env.REPO_FINGERPRINT }}
+          REPO_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
         run: |
+          # Buat folder repo
           mkdir -p repo
-          # Copy APK langsung ke folder repo (bukan repo/apk)
+
+          # Pindahkan APK ke repo (Flat)
           find . -name "*-release.apk" -exec cp {} repo/ \;
 
-          # Rename file (hapus -release)
+          # Masuk ke folder repo buat diproses
           cd repo
+
+          # Bersihkan nama file (hapus -release)
           for file in *-release.apk; do
             mv "$file" "${file/-release.apk/.apk}"
           done
 
-          # Hapus file yg bukan APK biar bersih
-          rm -f index.html || true
+          # Jalankan Script Python Generator
+          python3 -c '
+          import os
+          import json
 
-          # Generate repo.json (Required for Mihon/Tachiyomi to accept the repo)
-          echo '{
-            "meta": {
+          repo_data = []
+          # Use dynamic URL or fallback to user provided one
+          base_url = os.environ.get("REPO_URL", "https://gh-capital.github.io/waltzy/")
+          fingerprint = os.environ.get("REPO_FINGERPRINT", "")
+
+          print(f"Generating repo for {base_url}")
+
+          for filename in sorted(os.listdir(".")):
+              if filename.endswith(".apk"):
+                  # Format nama file: tachiyomi-id.nama-v1.2.3.apk
+                  try:
+                      parts = filename.replace(".apk", "").split("-")
+                      # parts contoh: ["tachiyomi", "id.Luvyaa", "v1.4.30"]
+
+                      # Ambil data dari nama file
+                      version = parts[-1].replace("v", "") # 1.4.30
+                      pkg_suffix = parts[-2] # id.Luvyaa
+                      lang = "all"
+
+                      if "." in pkg_suffix:
+                         lang = pkg_suffix.split(".")[0] # id
+
+                      name_parts = pkg_suffix.split(".")
+                      name = name_parts[-1].title() if len(name_parts) > 1 else name_parts[0].title() # Luvyaa
+                      pkg = f"eu.kanade.tachiyomi.extension.{pkg_suffix.lower()}"
+
+                      # Struktur JSON FLAT (Keiyoushi Style)
+                      entry = {
+                          "name": f"Tachiyomi: {name}",
+                          "pkg": pkg,
+                          "apk": filename, # Langsung nama file, tanpa folder apk/
+                          "lang": lang,
+                          "code": int(version.split(".")[-1]) if version.split(".")[-1].isdigit() else 1,
+                          "version": version,
+                          "nsfw": 0,
+                          "sources": []
+                      }
+                      repo_data.append(entry)
+                      print(f"Added: {name}")
+                  except Exception as e:
+                      print(f"Skipping {filename}: {e}")
+
+          # Simpan index.min.json (Wajib buat Mihon)
+          with open("index.min.json", "w") as f:
+              json.dump(repo_data, f, separators=(",", ":"))
+
+          # Simpan index.json (Versi Cantik buat Manusia)
+          with open("index.json", "w") as f:
+              json.dump(repo_data, f, indent=2)
+
+          # Simpan repo.json (Wajib buat keamanan Mihon baru)
+          repo_meta = {
               "name": "Manga Indo Extensions",
-              "website": "https://github.com/'"${{ github.repository }}"'",
-              "signingKeyFingerprint": "'"${{ env.REPO_FINGERPRINT }}"'"
-            }
-          }' > repo.json
-
-      - name: Generate Repo Index (Inspector)
-        run: |
-          curl -L "https://github.com/keiyoushi/extensions-inspector/releases/latest/download/Inspector.jar" -o Inspector.jar
-
-          # Scan folder "repo" langsung (karena APK udah disitu)
-          java -jar Inspector.jar "repo" "repo/index.min.json" "repo/index.json"
+              "id": "waltzy-repo",
+              "baseUrl": base_url,
+              "formatVersion": 1,
+              "signingKeyFingerprint": fingerprint
+          }
+          with open("repo.json", "w") as f:
+              json.dump(repo_meta, f, indent=2)
+          '
 
       - name: Deploy to gh-pages
         uses: peaceiris/actions-gh-pages@v3
@@ -91,4 +146,4 @@ jobs:
           force_orphan: true
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: 'Update repo (Keiyoushi Flat Style)'
+          commit_message: 'Update repo (Python Flat Generator)'

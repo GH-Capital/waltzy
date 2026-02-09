@@ -109,8 +109,10 @@ class ZeroScansHelper {
         // 1 = New & 4 = Dropped
         val compatibleStatus = statuses.filterNot { it.id in listOf(1, 4) }
 
-        // TODO Apply 6 to ON_HIATUS after ext-lib 1.3 merge
-        compatibleStatus.firstOrNull { it.id in listOf(5, 6) }
+        compatibleStatus.firstOrNull { it.id == 6 }
+            ?.also { return SManga.ON_HIATUS }
+
+        compatibleStatus.firstOrNull { it.id == 5 }
             ?.also { return SManga.ONGOING }
 
         compatibleStatus.firstOrNull { it.id == 3 }

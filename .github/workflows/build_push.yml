@@ -77,7 +77,8 @@ jobs:
 
       - name: Generate Repo Index (Inspector)
         run: |
-          curl -L "https://github.com/keiyoushi/extensions-inspector/releases/latest/download/Inspector.jar" -o Inspector.jar
+          INSPECTOR_URL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/keiyoushi/extensions-inspector/releases/latest | jq -r '.assets[0].browser_download_url')
+          curl -L "$INSPECTOR_URL" -o Inspector.jar
 
           # Scan folder "repo" langsung (karena APK udah disitu)
           java -jar Inspector.jar "repo" "repo/index.min.json" "repo/index.json"

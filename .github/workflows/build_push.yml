@@ -78,6 +78,12 @@ jobs:
       - name: Generate Repo Index (Inspector)
         run: |
           INSPECTOR_URL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/keiyoushi/extensions-inspector/releases/latest | jq -r '.assets[0].browser_download_url')
+
+          if [ -z "$INSPECTOR_URL" ] || [ "$INSPECTOR_URL" == "null" ]; then
+            echo "Error: Failed to fetch Inspector URL"
+            exit 1
+          fi
+
           curl -L "$INSPECTOR_URL" -o Inspector.jar
 
           # Scan folder "repo" langsung (karena APK udah disitu)

@@ -3,8 +3,6 @@ plugins {
 }
 
 spotless {
-    ratchetFrom = "origin/main"
-
     kotlin {
         target("**/*.kt", "**/*.kts")
         targetExclude("**/build/**/*.kt")

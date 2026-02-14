@@ -1,0 +1,22 @@
+name: Setup Extension
+
+on:
+  push:
+    paths:
+      - 'setup_extension.sh'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Needed for push to work
+
+      - name: Make setup_extension.sh executable
+        run: chmod +x setup_extension.sh
+
+      - name: Run setup script
+        run: ./setup_extension.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

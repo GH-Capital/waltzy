@@ -322,6 +322,13 @@ if [ ! -d ".git" ]; then
     git branch -M main
 fi
 
+# Configure Git User (Essential for GitHub Actions)
+if [ -n "$GITHUB_TOKEN" ]; then
+    echo -e "${BLUE}    -> Configuring Git User for CI...${NC}"
+    git config --global user.email "actions@github.com"
+    git config --global user.name "GitHub Actions"
+fi
+
 git add .
 
 # Only commit if there are changes
@@ -333,22 +340,9 @@ else
 fi
 
 
-# Git Push Automation
-if [ -n "$GITHUB_TOKEN" ]; then
-    echo -e "${GREEN}[+] GitHub Token detected. Pushing changes...${NC}"
-    git config --global user.email "actions@github.com"
-    git config --global user.name "GitHub Actions"
-
-    # We might be in a detached head state or shallow clone in Actions, so ensure we are on main
-    # git checkout main || git checkout -b main
-
-    # Push to origin
-    git push origin main
-    echo -e "${GREEN}[+] Successfully pushed to origin/main.${NC}"
-else
-    echo -e "${BLUE}[i] No GITHUB_TOKEN found. Skipping auto-push.${NC}"
-    echo -e "${BLUE}[i] Files are committed locally.${NC}"
-fi
+# No GitHub Token provided in TachiGen. Skipping Auto-Push.
+echo -e "${BLUE}[i] GitHub Token not found. Files are committed locally.${NC}"
+echo -e "${BLUE}[i] To push manually: git remote add origin <URL> && git push -u origin main${NC}"
 
 
 echo -e "

@@ -340,9 +340,16 @@ else
 fi
 
 
-# No GitHub Token provided in TachiGen. Skipping Auto-Push.
-echo -e "${BLUE}[i] GitHub Token not found. Files are committed locally.${NC}"
-echo -e "${BLUE}[i] To push manually: git remote add origin <URL> && git push -u origin main${NC}"
+if [ -n "$GITHUB_TOKEN" ]; then
+    echo -e "${BLUE}    -> Auto-pushing to repository...${NC}"
+    # Use the token for authentication if needed, though usually git is already configured
+    # if we are in an action.
+    git push origin main
+else
+    # No GitHub Token provided in TachiGen. Skipping Auto-Push.
+    echo -e "${BLUE}[i] GitHub Token not found. Files are committed locally.${NC}"
+    echo -e "${BLUE}[i] To push manually: git remote add origin <URL> && git push -u origin main${NC}"
+fi
 
 
 echo -e "
